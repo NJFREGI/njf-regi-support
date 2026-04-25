@@ -21,6 +21,23 @@ function renderMarkdown(text: string): string {
     .join('<br/>');
 }
 
+function getGreeting(lang: string): { main: string; sub: string } {
+  const h = new Date().getHours();
+  if (lang === "zh") {
+    if (h >= 5 && h < 12) return { main: "早上好，老板！", sub: "美好的一天又开始了，有什么可以帮到您的吗？" };
+    if (h >= 12 && h < 14) return { main: "中午好，老板！", sub: "记得好好休息一下，有什么问题尽管问我！" };
+    if (h >= 14 && h < 18) return { main: "下午好，老板！", sub: "下午继续加油，有什么可以帮到您的吗？" };
+    if (h >= 18 && h < 22) return { main: "晚上好，老板！", sub: "坚守到现在真辛苦了，有什么可以帮到您的吗？" };
+    return { main: "夜深了，老板！", sub: "注意休息哦，有什么问题我来帮您解答！" };
+  } else {
+    if (h >= 5 && h < 12) return { main: "おはようございます！", sub: "素晴らしい一日の始まりです。何かお手伝いできることはありますか？" };
+    if (h >= 12 && h < 14) return { main: "こんにちは！", sub: "お昼休みはしっかり取れていますか？何かご質問があればどうぞ！" };
+    if (h >= 14 && h < 18) return { main: "こんにちは！", sub: "午後も頑張りましょう。何かお手伝いできることはありますか？" };
+    if (h >= 18 && h < 22) return { main: "お疲れ様です！", sub: "遅くまでお仕事お疲れ様です。何かお手伝いできることはありますか？" };
+    return { main: "夜遅くまでお疲れ様です！", sub: "しっかり休んでくださいね。ご質問があればいつでもどうぞ！" };
+  }
+}
+
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -30,6 +47,19 @@ interface Message {
 
 type Lang = "ja" | "zh";
 
+const QUESTIONS = {
+  ja: [
+    ["レジの電源を入れる方法を教えてください", "領収書を再発行するには？", "商品の登録・編集方法は？", "日次締め処理の手順を教えてください"],
+    ["エラーコード一覧はどこで確認できますか？", "売上レポートの出力方法は？", "麻辣烫の計量・会計の流れは？", "店内飲食と持ち帰りの切替方法は？"],
+    ["反会計の操作方法を教えてください", "利用できる支払方法は何ですか？", "領収書の印刷方法は？", "準備金の入力方法は？"],
+  ],
+  zh: [
+    ["如何开机启动收银机？", "如何补打领收书？", "如何注册或编辑商品？", "日结交班流程是什么？"],
+    ["在哪里查看错误代码列表？", "如何导出销售报表？", "麻辣烫称重结账流程？", "如何切换堂食和外带？"],
+    ["如何进行反结账操作？", "支付方式有哪些？", "如何打印领收书？", "准备金怎么输入？"],
+  ],
+};
+
 const I18N = {
   ja: {
     title: "NJF REGI AIサポート",
@@ -37,22 +67,15 @@ const I18N = {
     navLabel: "よくある質問",
     contactLabel: "人工サポート",
     contactHours: "平日 9:00〜18:00",
-    welcomeTitle: "何かお手伝いできることはありますか？",
-    welcomeSub: "NJF REGIの操作方法について、マニュアルをもとにご案内します。\nよくある質問から選ぶか、下のテキストボックスに質問を入力してください。",
     placeholder: "操作方法について質問してください…",
     inputHint: "Enter で送信・Shift+Enter で改行",
     contactCardTitle: "サポートへのご連絡",
     contactEmail: "✉ メール",
     contactPhone: "☎ 電話",
     humanSupportBtn: "📞 人工サポートに電話",
-    questions: [
-      "レジの電源を入れる方法を教えてください",
-      "領収書を再発行するには？",
-      "商品の登録・編集方法は？",
-      "日次締め処理の手順を教えてください",
-      "エラーコード一覧はどこで確認できますか？",
-      "売上レポートの出力方法は？",
-    ],
+    tryBtn: "試してみる",
+    faqLabel: "よくある質問",
+    poweredBy: "NJF REGI · DeepSeek",
   },
   zh: {
     title: "NJF REGI AI客服",
@@ -60,22 +83,15 @@ const I18N = {
     navLabel: "常见问题",
     contactLabel: "人工客服",
     contactHours: "工作日 9:00〜18:00",
-    welcomeTitle: "有什么可以帮助您的吗？",
-    welcomeSub: "我们将根据 NJF REGI 操作手册为您提供指导。\n请从常见问题中选择，或在下方输入您的问题。",
     placeholder: "请输入您的操作问题…",
     inputHint: "Enter 发送・Shift+Enter 换行",
     contactCardTitle: "联系人工客服",
     contactEmail: "✉ 邮箱",
     contactPhone: "☎ 电话",
     humanSupportBtn: "📞 联系人工客服",
-    questions: [
-      "如何开机启动收银机？",
-      "如何补打领收书？",
-      "如何注册或编辑商品？",
-      "日结交班流程是什么？",
-      "在哪里查看错误代码列表？",
-      "如何导出销售报表？",
-    ],
+    tryBtn: "去试试",
+    faqLabel: "常见问题",
+    poweredBy: "NJF REGI · DeepSeek",
   },
 };
 
@@ -91,13 +107,23 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [lang, setLang] = useState<Lang>("ja");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [carouselPage, setCarouselPage] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const t = I18N[lang];
+  const greeting = getGreeting(lang);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  useEffect(() => {
+    if (messages.length > 0) return;
+    const timer = setInterval(() => {
+      setCarouselPage(p => (p + 1) % 3);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, [messages.length]);
 
   const sendMessage = async (text: string) => {
     const userText = text.trim();
@@ -151,7 +177,10 @@ export default function Home() {
   const switchLang = () => {
     setLang(lang === "ja" ? "zh" : "ja");
     setMessages([]);
+    setCarouselPage(0);
   };
+
+  const questions = QUESTIONS[lang];
 
   return (
     <div className={styles.shell}>
@@ -166,17 +195,15 @@ export default function Home() {
           </div>
           <button className={styles.sidebarClose} onClick={() => setSidebarOpen(false)}>✕</button>
         </div>
-
         <nav className={styles.sidebarNav}>
           <p className={styles.navLabel}>{t.navLabel}</p>
-          {t.questions.map((q, i) => (
+          {questions.flat().map((q, i) => (
             <button key={i} className={styles.quickBtn} onClick={() => sendMessage(q)} disabled={loading}>
               <span className={styles.quickIcon}>?</span>
               <span className={styles.quickText}>{q}</span>
             </button>
           ))}
         </nav>
-
         <div className={styles.sidebarContact}>
           <p className={styles.contactLabel}>{t.contactLabel}</p>
           <div className={styles.contactItem}>
@@ -205,7 +232,7 @@ export default function Home() {
           <div className={styles.headerRight}>
             <span className={styles.headerSub}>{t.subtitle}</span>
             <button className={styles.langBtn} onClick={switchLang}>
-              {lang === "ja" ? "切换中文" : "日本語切替"}
+              {lang === "ja" ? "中文" : "日本語"}
             </button>
           </div>
         </header>
@@ -213,20 +240,49 @@ export default function Home() {
         <div className={styles.chatArea}>
           {messages.length === 0 && (
             <div className={styles.welcome}>
-              <div className={styles.welcomeIcon}>
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                  <rect width="48" height="48" rx="16" fill="#2563eb" opacity="0.1"/>
-                  <path d="M14 24C14 18.477 18.477 14 24 14s10 4.477 10 10-4.477 10-10 10-10-4.477-10-10z" fill="#2563eb" opacity="0.2"/>
-                  <path d="M20 24h8M24 20v8" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round"/>
-                </svg>
+              {/* Hero 问候区 */}
+              <div className={styles.heroSection}>
+                <div className={styles.avatarFloat}>
+                  <img src="/avatar.png" alt="AI助手" className={styles.avatarImg} />
+                </div>
+                <div className={styles.greetingBox}>
+                  <div className={styles.greetingMain}>{greeting.main}</div>
+                  <div className={styles.greetingSub}>{greeting.sub}</div>
+                </div>
               </div>
-              <h2 className={styles.welcomeTitle}>{t.welcomeTitle}</h2>
-              <p className={styles.welcomeSub}>{t.welcomeSub}</p>
-              <div className={styles.welcomeQuickGrid}>
-                {t.questions.slice(0, 3).map((q, i) => (
-                  <button key={i} className={styles.welcomeQuickBtn} onClick={() => sendMessage(q)} disabled={loading}>{q}</button>
-                ))}
+
+              {/* 轮播常见问题 */}
+              <div className={styles.carouselSection}>
+                <p className={styles.faqLabel}>{t.faqLabel}</p>
+                <div className={styles.carouselViewport}>
+                  <div
+                    className={styles.carouselTrack}
+                    style={{ transform: `translateX(-${carouselPage * 100}%)` }}
+                  >
+                    {questions.map((page, pi) => (
+                      <div key={pi} className={styles.carouselPage}>
+                        {page.map((q, qi) => (
+                          <button key={qi} className={styles.qCard} onClick={() => sendMessage(q)}>
+                            <span className={styles.qText}>{q}</span>
+                            <span className={styles.qBtn}>{t.tryBtn}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className={styles.dots}>
+                  {[0, 1, 2].map(i => (
+                    <button
+                      key={i}
+                      className={`${styles.dot} ${carouselPage === i ? styles.dotActive : ""}`}
+                      onClick={() => setCarouselPage(i)}
+                    />
+                  ))}
+                </div>
               </div>
+
+              <div className={styles.poweredBy}>{t.poweredBy}</div>
             </div>
           )}
 
