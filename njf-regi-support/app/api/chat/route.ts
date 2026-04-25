@@ -4,29 +4,10 @@ import OpenAI from "openai";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const VECTOR_STORE_ID = process.env.OPENAI_VECTOR_STORE_ID || "";
 
-const SYSTEM_PROMPT_JA = `You are a support AI for the NJF REGI system.
-CRITICAL: You MUST respond in Japanese ONLY. Never use Chinese or English in your response.
-
-Rules:
-1. Reference the attached manual documents to answer
-2. Respond in Japanese only - this is mandatory
-3. Show operation steps as numbered lists
-4. If information is not found in the manual, provide this contact info in Japanese:
-   メール: support@njfregi.jp
-   電話: 03-XXXX-XXXX（平日 9:00〜18:00）
-5. Do not guess`;
-
-const SYSTEM_PROMPT_ZH = `You are a support AI for the NJF REGI system.
-CRITICAL: You MUST respond in Simplified Chinese ONLY. Never use Japanese (hiragana, katakana, or kanji with Japanese readings) or English in your response. All text must be Chinese.
-
-Rules:
-1. Reference the attached manual documents to answer
-2. Respond in Simplified Chinese only - this is absolutely mandatory, no Japanese characters allowed
-3. Show operation steps as numbered lists
-4. If information is not found in the manual, provide this contact info in Chinese:
-   邮箱：support@njfregi.jp
-   电话：03-XXXX-XXXX（工作日 9:00〜18:00）
-5. Do not guess`;
+const SYSTEM_PROMPT = `You are a support AI for the NJF REGI cashier system.
+Reference the attached manual documents to answer questions.
+Show operation steps as numbered lists.
+Do not guess if information is not in the manual.`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,12 +17,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid messages" }, { status: 400 });
     }
 
-    const systemPrompt = lang === "zh" ? SYSTEM_PROMPT_ZH : SYSTEM_PROMPT_JA;
+    // Force language by injecting instruction into user's message
+    const langInstruction = lang === "zh"
+      ? "【重要指示】以下の質問に必ず簡体字中国語のみで回答してください。日本語・英語は使用禁止。回答は全て中国語で。\n\n"
+      : "【重要指示】Please respond in Japanese only.\n\n";
 
-    const input = messages.map((m: { role: string; content: string }) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    }));
+    const input = messages.map((m: { role: string; content: string }, i: number) => {
+      // Inject language instruction into every user message
+      if (m.role === "user") {
+        return {
+          role: "user" as const,
+          content: langInstruction + m.content,
+        };
+      }
+      return { role: m.role as "user" | "assistant", content: m.content };
+    });
 
     const tools: OpenAI.Responses.Tool[] = [];
     if (VECTOR_STORE_ID) {
@@ -51,10 +41,16 @@ export async function POST(req: NextRequest) {
       } as OpenAI.Responses.FileSearchTool);
     }
 
-    // Never use previous_response_id - always send full conversation to ensure language consistency
+    const contactZh = "邮箱：support@njfregi.jp / 电话：03-XXXX-XXXX（工作日 9:00〜18:00）";
+    const contactJa = "メール: support@njfregi.jp / 電話: 03-XXXX-XXXX（平日 9:00〜18:00）";
+
+    const fullSystem = SYSTEM_PROMPT + (lang === "zh"
+      ? `\nIf you cannot find the answer, say so in Chinese and provide: ${contactZh}`
+      : `\nIf you cannot find the answer, say so in Japanese and provide: ${contactJa}`);
+
     const params: OpenAI.Responses.ResponseCreateParamsNonStreaming = {
       model: "gpt-4o",
-      instructions: systemPrompt,
+      instructions: fullSystem,
       input,
       ...(tools.length > 0 && { tools }),
     };
@@ -75,10 +71,10 @@ export async function POST(req: NextRequest) {
       .join("");
 
     const cannotAnswerJa = outputText.includes("わかりません") || outputText.includes("情報が見つかりません");
-    const cannotAnswerZh = outputText.includes("无法回答") || outputText.includes("找不到相关信息") || outputText.includes("手册中没有");
+    const cannotAnswerZh = outputText.includes("无法回答") || outputText.includes("找不到") || outputText.includes("没有相关");
     const couldNotAnswer = lang === "zh" ? cannotAnswerZh : cannotAnswerJa;
 
-    return NextResponse.json({ answer: outputText, responseId: response.id, couldNotAnswer });
+    return NextResponse.json({ answer: outputText, couldNotAnswer });
   } catch (error) {
     console.error("OpenAI API error:", error);
     return NextResponse.json(
