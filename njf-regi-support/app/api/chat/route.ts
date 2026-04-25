@@ -4,6 +4,11 @@ import OpenAI from "openai";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const VECTOR_STORE_ID = process.env.OPENAI_VECTOR_STORE_ID || "";
 
+const SYSTEM_PROMPT = `You are a support AI for the NJF REGI cashier system.
+Reference the attached manual documents to answer questions.
+Show operation steps as numbered lists.
+Do not guess if information is not in the manual.`;
+
 export async function POST(req: NextRequest) {
   try {
     const { messages, lang } = await req.json();
@@ -12,16 +17,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid messages" }, { status: 400 });
     }
 
-    const isZh = lang === "zh";
+    // Force language by injecting instruction into user's message
+    const langInstruction = lang === "zh"
+      ? "【重要指示】必须只使用简体中文回答，严禁使用繁体中文、日语、英语。回答语言：简体中文。\n\n"
+      : "【重要指示】Please respond in Japanese only.\n\n";
 
-    const systemPrompt = isZh
-      ? `You are a support AI for NJF REGI. IMPORTANT: Reply in Simplified Chinese (简体中文) ONLY. No Japanese. No Traditional Chinese. Use numbered lists for steps. Reference the attached manuals.`
-      : `You are a support AI for NJF REGI. IMPORTANT: Reply in Japanese ONLY. Use numbered lists for steps. Reference the attached manuals.`;
-
-    const input = messages.map((m: { role: string; content: string }) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    }));
+    const input = messages.map((m: { role: string; content: string }, i: number) => {
+      // Inject language instruction into every user message
+      if (m.role === "user") {
+        return {
+          role: "user" as const,
+          content: langInstruction + m.content,
+        };
+      }
+      return { role: m.role as "user" | "assistant", content: m.content };
+    });
 
     const tools: OpenAI.Responses.Tool[] = [];
     if (VECTOR_STORE_ID) {
@@ -31,12 +41,21 @@ export async function POST(req: NextRequest) {
       } as OpenAI.Responses.FileSearchTool);
     }
 
-    const response = await openai.responses.create({
+    const contactZh = "邮箱：support@njfregi.jp / 电话：03-XXXX-XXXX（工作日 9:00〜18:00）";
+    const contactJa = "メール: support@njfregi.jp / 電話: 03-XXXX-XXXX（平日 9:00〜18:00）";
+
+    const fullSystem = SYSTEM_PROMPT + (lang === "zh"
+      ? `\nIf you cannot find the answer, respond in Simplified Chinese (简体中文) only and provide this contact info in Simplified Chinese: ${contactZh}`
+      : `\nIf you cannot find the answer, say so in Japanese and provide: ${contactJa}`);
+
+    const params: OpenAI.Responses.ResponseCreateParamsNonStreaming = {
       model: "gpt-4o",
-      instructions: systemPrompt,
+      instructions: fullSystem,
       input,
       ...(tools.length > 0 && { tools }),
-    });
+    };
+
+    const response = await openai.responses.create(params);
 
     const outputText = response.output
       .filter((item) => item.type === "message")
@@ -51,11 +70,15 @@ export async function POST(req: NextRequest) {
       })
       .join("");
 
-    return NextResponse.json({ answer: outputText, couldNotAnswer: false });
+    const cannotAnswerJa = outputText.includes("わかりません") || outputText.includes("情報が見つかりません");
+    const cannotAnswerZh = outputText.includes("无法回答") || outputText.includes("找不到") || outputText.includes("没有相关");
+    const couldNotAnswer = lang === "zh" ? cannotAnswerZh : cannotAnswerJa;
+
+    return NextResponse.json({ answer: outputText, couldNotAnswer });
   } catch (error) {
     console.error("OpenAI API error:", error);
     return NextResponse.json(
-      { error: "连接失败，请稍后重试。", couldNotAnswer: true },
+      { error: lang === "zh" ? "AI服务连接失败，请稍后重试。" : "AIサービスに接続できませんでした。", couldNotAnswer: true },
       { status: 500 }
     );
   }
