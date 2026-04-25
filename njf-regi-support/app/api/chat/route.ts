@@ -15,9 +15,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid messages" }, { status: 400 });
     }
 
+    const formatRule = `
+Format rules (MUST follow):
+- For numbered steps, use this exact format (title and detail on separate lines):
+  1. Step title
+     - detail description
+  2. Step title
+     - detail description
+- Never put the detail on the same line as the number
+- Use - for bullet points under each step
+- Do NOT use ** bold markers inside step titles`;
+
     const systemPrompt = lang === "zh"
-      ? `You are a support AI for NJF REGI. IMPORTANT: Reply in Simplified Chinese (简体中文) ONLY. No Japanese. No Traditional Chinese. Use numbered lists for steps. Reference the attached manuals.`
-      : `You are a support AI for NJF REGI. IMPORTANT: Reply in Japanese ONLY. Use numbered lists for steps. Reference the attached manuals.`;
+      ? `You are a support AI for NJF REGI. Reply in Simplified Chinese (简体中文) ONLY. No Japanese. No Traditional Chinese. Reference the attached manuals.${formatRule}`
+      : `You are a support AI for NJF REGI. Reply in Japanese ONLY. Reference the attached manuals.${formatRule}`;
 
     const input = messages.map((m: { role: string; content: string }) => ({
       role: m.role as "user" | "assistant",
