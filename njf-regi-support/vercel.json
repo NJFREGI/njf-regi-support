@@ -2,6 +2,5 @@
   "framework": "nextjs",
   "buildCommand": "next build",
   "devCommand": "next dev",
-  "installCommand": "npm install",
-  "regions": ["nrt1"]
+  "installCommand": "npm install"
 }
