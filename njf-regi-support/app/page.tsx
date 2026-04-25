@@ -198,7 +198,7 @@ export default function Home() {
           <div className={styles.headerRight}>
             <span className={styles.headerSub}>{t.subtitle}</span>
             <button className={styles.langBtn} onClick={switchLang}>
-              {lang === "ja" ? "中文" : "日本語"}
+              {lang === "ja" ? "切换中文" : "日本語切替"}
             </button>
           </div>
         </header>
