@@ -86,3 +86,4 @@ html, body {
   flex-shrink: 0;
   margin-top: 8px;
 }
+.md-step-title { font-weight: 600; color: #1e293b; line-height: 1.7; }
