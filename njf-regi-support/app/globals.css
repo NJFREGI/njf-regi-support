@@ -2,21 +2,11 @@
 
 :root {
   --njf-navy: #0a1628;
-  --njf-blue: #1a3a6b;
   --njf-accent: #2563eb;
-  --njf-accent-light: #3b82f6;
-  --njf-surface: #f8fafc;
-  --njf-surface-2: #f1f5f9;
-  --njf-border: #e2e8f0;
-  --njf-text: #0f172a;
-  --njf-text-muted: #64748b;
+  --njf-surface: #f0f2f5;
   --njf-white: #ffffff;
   --njf-green: #059669;
-  --njf-orange: #ea580c;
-  --radius-sm: 8px;
-  --radius-md: 12px;
   --radius-lg: 16px;
-  --radius-xl: 24px;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,7 +15,7 @@ html, body {
   height: 100%;
   font-family: 'Noto Sans JP', 'Inter', sans-serif;
   background: var(--njf-navy);
-  color: var(--njf-text);
+  color: #1a1a1a;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -36,39 +26,55 @@ html, body {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  margin: 8px 0;
+  margin: 6px 0;
 }
 
 .md-step-num {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  height: 24px;
+  min-width: 22px;
+  height: 22px;
   background: #2563eb;
   color: white;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   border-radius: 6px;
   flex-shrink: 0;
-  margin-top: 1px;
+  margin-top: 2px;
   font-family: 'Inter', sans-serif;
 }
 
-.md-step-text {
-  flex: 1;
+/* 步骤标题：蓝色底色标签，字体和正文完全一样 */
+.md-step-title {
+  display: inline-block;
+  background: #dbeafe;
+  color: #1e40af;
+  font-weight: 400;
+  font-size: 14px;
+  padding: 2px 10px;
+  border-radius: 20px;
   line-height: 1.7;
 }
 
+/* 正文粗体：同样的蓝色底色标签 */
 .md-bold {
   display: inline-block;
-  background: #eff6ff;
+  background: #dbeafe;
   color: #1e40af;
-  font-weight: 600;
-  font-size: 13px;
-  padding: 1px 7px;
-  border-radius: 5px;
-  border: 1px solid #bfdbfe;
+  font-weight: 400;
+  font-size: 14px;
+  padding: 2px 10px;
+  border-radius: 20px;
+  line-height: 1.7;
+}
+
+.md-step-text {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.7;
+  color: #1a1a1a;
+  flex: 1;
 }
 
 .md-bullet {
@@ -76,50 +82,14 @@ html, body {
   align-items: flex-start;
   gap: 8px;
   margin: 4px 0;
+  padding-left: 4px;
 }
 
 .md-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   background: #2563eb;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-top: 8px;
-}
-
-/* ===== Override: unified step title style ===== */
-.md-step-num {
-  min-width: 22px !important;
-  height: 22px !important;
-  font-size: 11px !important;
-}
-
-.md-step-title {
-  display: inline-block;
-  background: #dbeafe !important;
-  color: #1e40af !important;
-  font-weight: 400 !important;
-  font-size: 14px !important;
-  padding: 2px 10px !important;
-  border-radius: 5px !important;
-  border: 1px solid #bfdbfe !important;
-  line-height: 1.7 !important;
-}
-
-.md-bold {
-  display: inline-block !important;
-  background: #dbeafe !important;
-  color: #1e40af !important;
-  font-weight: 400 !important;
-  font-size: 14px !important;
-  padding: 2px 10px !important;
-  border-radius: 5px !important;
-  border: 1px solid #bfdbfe !important;
-}
-
-.md-step-text {
-  font-size: 14px !important;
-  font-weight: 400 !important;
-  line-height: 1.7 !important;
-  color: #1e293b !important;
+  margin-top: 9px;
 }
