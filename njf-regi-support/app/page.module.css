@@ -197,10 +197,8 @@
 .chatArea {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
 }
 .chatArea::-webkit-scrollbar { width: 4px; }
 .chatArea::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 2px; }
@@ -208,48 +206,169 @@
 .welcome {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 14px;
-  padding: 40px 16px;
   flex: 1;
-  justify-content: center;
 }
 
-.welcomeIcon { margin-bottom: 4px; }
-.welcomeTitle { font-size: 20px; font-weight: 600; color: #111; }
-.welcomeSub { font-size: 13.5px; color: #666; line-height: 1.8; max-width: 440px; white-space: pre-line; }
-
-.welcomeQuickGrid {
+.heroSection {
+  background: #f0f2f5;
+  padding: 20px 16px 16px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 8px;
-  max-width: 520px;
+  align-items: center;
+  gap: 14px;
 }
 
-.welcomeQuickBtn {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 20px;
-  padding: 8px 16px;
-  font-size: 13px;
-  color: #2563eb;
-  cursor: pointer;
-  transition: all 0.15s;
-  font-family: 'Noto Sans JP', sans-serif;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+.avatarFloat {
+  width: 90px;
+  height: 90px;
+  flex-shrink: 0;
+  animation: floatUpDown 2.8s ease-in-out infinite;
 }
-.welcomeQuickBtn:hover:not(:disabled) { background: #eff6ff; border-color: #bfdbfe; }
-.welcomeQuickBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+@keyframes floatUpDown {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.avatarImg {
+  width: 90px;
+  height: 90px;
+  border-radius: 0;
+  object-fit: contain;
+  border: none;
+  background: transparent;
+}
+
+.greetingBox { flex: 1; }
+
+.greetingMain {
+  font-size: 17px;
+  font-weight: 600;
+  color: #111;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.greetingSub {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.carouselSection {
+  padding: 14px 16px 0;
+  flex: 1;
+}
+
+.faqLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #999;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.carouselViewport {
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.carouselTrack {
+  display: flex;
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.carouselPage {
+  min-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qCard {
+  background: white;
+  border-radius: 12px;
+  padding: 13px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  border: 1px solid #eee;
+  width: 100%;
+  text-align: left;
+  transition: background 0.15s;
+  gap: 8px;
+}
+.qCard:hover { background: #f8fafc; }
+
+.qText {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qBtn {
+  font-size: 12px;
+  color: #2563eb;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #eff6ff;
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 0 6px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ddd;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s;
+  padding: 0;
+}
+
+.dotActive {
+  width: 18px;
+  border-radius: 3px;
+  background: #2563eb;
+}
+
+.poweredBy {
+  text-align: center;
+  font-size: 11px;
+  color: #bbb;
+  padding: 8px 0 12px;
+}
+
+.welcomeTitle { display: none; }
+.welcomeSub { display: none; }
+.welcomeIcon { display: none; }
+.welcomeQuickGrid { display: none; }
+.welcomeQuickBtn { display: none; }
 
 .messageRow {
   display: flex;
   gap: 10px;
   align-items: flex-end;
   animation: fadeIn 0.2s ease;
+  padding: 0 16px;
+  margin-top: 16px;
 }
+.messageRow:last-of-type { margin-bottom: 16px; }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
@@ -423,160 +542,8 @@
   .sidebarClose { display: flex; align-items: center; justify-content: center; }
   .menuBtn { display: flex; }
   .headerSub { display: none; }
-  .chatArea { padding: 14px 12px; }
   .inputArea { padding: 10px 12px 14px; }
   .messageBubbleWrap { max-width: 86%; }
-  .welcomeTitle { font-size: 18px; }
   .header { padding: 11px 14px; }
+  .messageRow { padding: 0 12px; }
 }
-.welcome {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  overflow-y: auto;
-}
-
-.heroSection {
-  background: linear-gradient(160deg, #1a3a6b 0%, #0a1628 100%);
-  padding: 20px 16px 24px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.avatarFloat {
-  width: 72px;
-  height: 72px;
-  flex-shrink: 0;
-  animation: floatUpDown 2.8s ease-in-out infinite;
-}
-
-@keyframes floatUpDown {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-.avatarImg {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid rgba(255,255,255,0.25);
-}
-
-.greetingBox { flex: 1; }
-
-.greetingMain {
-  font-size: 17px;
-  font-weight: 600;
-  color: white;
-  line-height: 1.4;
-  margin-bottom: 4px;
-}
-
-.greetingSub {
-  font-size: 12px;
-  color: rgba(255,255,255,0.6);
-  line-height: 1.5;
-}
-
-.carouselSection {
-  padding: 14px 16px 0;
-  flex: 1;
-}
-
-.faqLabel {
-  font-size: 11px;
-  font-weight: 600;
-  color: #999;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  margin-bottom: 10px;
-}
-
-.carouselViewport {
-  overflow: hidden;
-  border-radius: 12px;
-}
-
-.carouselTrack {
-  display: flex;
-  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.carouselPage {
-  min-width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.qCard {
-  background: white;
-  border-radius: 12px;
-  padding: 13px 14px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  border: 1px solid #eee;
-  width: 100%;
-  text-align: left;
-  transition: background 0.15s;
-}
-.qCard:hover { background: #f8fafc; }
-
-.qText {
-  font-size: 14px;
-  font-weight: 500;
-  color: #1a1a1a;
-  flex: 1;
-}
-
-.qBtn {
-  font-size: 12px;
-  color: #2563eb;
-  font-weight: 500;
-  white-space: nowrap;
-  margin-left: 10px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  background: #eff6ff;
-}
-
-.dots {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  padding: 12px 0 6px;
-}
-
-.dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #ddd;
-  border: none;
-  cursor: pointer;
-  transition: all 0.25s;
-  padding: 0;
-}
-
-.dotActive {
-  width: 18px;
-  border-radius: 3px;
-  background: #2563eb;
-}
-
-.poweredBy {
-  text-align: center;
-  font-size: 11px;
-  color: #bbb;
-  padding: 8px 0 12px;
-}
-
-.welcomeTitle { display: none; }
-.welcomeSub { display: none; }
-.welcomeIcon { display: none; }
-.welcomeQuickGrid { display: none; }
-.welcomeQuickBtn { display: none; }
