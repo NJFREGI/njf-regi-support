@@ -1,27 +1,16 @@
 "use client";
 
-function renderMarkdown(text: string): string {
-  return text
-    .split('\n')
-    .map(line => {
-      // 数字步骤：1. **标题** 或 1. 标题（统一处理，标题内的**也去掉）
-      const stepMatch = line.match(/^(\d+)\.\s+(.+)$/);
-      if (stepMatch) {
-        const title = stepMatch[2].replace(/\*\*(.+?)\*\*/g, '$1').replace(/:$/, '');
-        return `<div class="md-step"><span class="md-step-num">${stepMatch[1]}</span><span class="md-step-title">${title}</span></div>`;
-      }
-      // 列表项
-      if (line.match(/^[-•]\s/)) {
-        const content = line.replace(/^[-•]\s+/, '').replace(/\*\*(.+?)\*\*/g, '<span class="md-bold">$1</span>');
-        return `<div class="md-bullet"><span class="md-dot"></span><span>${content}</span></div>`;
-      }
-      // 普通行里的粗体
-      return line.replace(/\*\*(.+?)\*\*/g, '<span class="md-bold">$1</span>');
-    })
-    .join('<br/>');
-}
 import { useState, useRef, useEffect } from "react";
 import styles from "./page.module.css";
+
+function renderMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<span class="md-bold">$1</span>')
+    .replace(/^(\d+)\. (.+)$/gm, '<div class="md-step"><span class="md-step-num">$1</span><span class="md-step-text">$2</span></div>')
+    .replace(/^[-•] (.+)$/gm, '<div class="md-bullet"><span class="md-dot"></span><span>$1</span></div>')
+    .replace(/\n{2,}/g, '<br/><br/>')
+    .replace(/\n/g, '<br/>');
+}
 
 interface Message {
   role: "user" | "assistant";
@@ -91,7 +80,6 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [previousResponseId, setPreviousResponseId] = useState<string | null>(null);
   const [lang, setLang] = useState<Lang>("ja");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -119,7 +107,6 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
-          previousResponseId,
           lang,
         }),
       });
@@ -129,7 +116,6 @@ export default function Home() {
       if (data.error && !data.answer) {
         setMessages((prev) => [...prev, { role: "assistant", content: data.error, couldNotAnswer: true, timestamp: new Date() }]);
       } else {
-        if (data.responseId) setPreviousResponseId(data.responseId);
         setMessages((prev) => [...prev, { role: "assistant", content: data.answer, couldNotAnswer: data.couldNotAnswer, timestamp: new Date() }]);
       }
     } catch {
@@ -154,6 +140,11 @@ export default function Home() {
 
   const formatTime = (date: Date) =>
     date.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+
+  const switchLang = () => {
+    setLang(lang === "ja" ? "zh" : "ja");
+    setMessages([]);
+  };
 
   return (
     <div className={styles.shell}>
@@ -206,8 +197,8 @@ export default function Home() {
           </div>
           <div className={styles.headerRight}>
             <span className={styles.headerSub}>{t.subtitle}</span>
-            <button className={styles.langBtn} onClick={() => { setLang(lang === "ja" ? "zh" : "ja"); setMessages([]); setPreviousResponseId(null); }}>
-              {lang === "ja" ? "切换中文" : "日本語切替"}
+            <button className={styles.langBtn} onClick={switchLang}>
+              {lang === "ja" ? "中文" : "日本語"}
             </button>
           </div>
         </header>
@@ -237,7 +228,14 @@ export default function Home() {
               {msg.role === "assistant" && <div className={styles.avatar}><span>AI</span></div>}
               <div className={styles.messageBubbleWrap}>
                 <div className={`${styles.bubble} ${msg.role === "user" ? styles.userBubble : styles.assistantBubble}`}>
-                  <div className={styles.bubbleText} dangerouslySetInnerHTML={{ __html: msg.role === "assistant" ? renderMarkdown(msg.content) : msg.content.replace(/\n/g, "<br/>") }} />
+                  {msg.role === "assistant" ? (
+                    <div
+                      className={styles.bubbleText}
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                    />
+                  ) : (
+                    <p className={styles.bubbleText}>{msg.content}</p>
+                  )}
                   {msg.couldNotAnswer && msg.role === "assistant" && (
                     <div className={styles.contactCard}>
                       <p className={styles.contactCardTitle}>{t.contactCardTitle}</p>
@@ -249,8 +247,8 @@ export default function Home() {
                         <span>{t.contactPhone}</span>
                         <span>{CONTACT_INFO.phone}</span>
                       </div>
-                      <a href={CONTACT_INFO.url} target="_blank" rel="noopener noreferrer" className={styles.contactCardLink}>
-                        {t.contactChat}
+                      <a href={`tel:${CONTACT_INFO.phone}`} className={styles.humanSupportBtn}>
+                        {lang === "zh" ? "📞 联系人工客服" : "📞 人工サポートに電話"}
                       </a>
                     </div>
                   )}
