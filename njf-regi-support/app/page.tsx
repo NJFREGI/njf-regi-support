@@ -2,13 +2,25 @@
 
 function renderMarkdown(text: string): string {
   return text
-    .replace(/\*\*(.+?)\*\*/g, '<strong class="md-bold">$1</strong>')
-    .replace(/^(\d+)\. (.+)$/gm, '<div class="md-step"><span class="md-step-num">$1</span><span class="md-step-text">$2</span></div>')
-    .replace(/^[-•] (.+)$/gm, '<div class="md-bullet"><span class="md-dot"></span><span>$1</span></div>')
-    .replace(/\n{2,}/g, '<br/>')
-    .replace(/\n/g, '<br/>');
+    .split('\n')
+    .map(line => {
+      const stepMatch = line.match(/^(\d+)\.\s+\*\*(.+?)\*\*:?\s*(.*)$/);
+      if (stepMatch) {
+        const desc = stepMatch[3] ? `<span class="md-step-text">${stepMatch[3]}</span>` : '';
+        return `<div class="md-step"><span class="md-step-num">${stepMatch[1]}</span><span class="md-step-title">${stepMatch[2]}</span>${desc}</div>`;
+      }
+      const plainStep = line.match(/^(\d+)\.\s+(.+)$/);
+      if (plainStep) {
+        return `<div class="md-step"><span class="md-step-num">${plainStep[1]}</span><span class="md-step-text">${plainStep[2]}</span></div>`;
+      }
+      let boldLine = line.replace(/\*\*(.+?)\*\*/g, '<span class="md-bold">$1</span>');
+      if (boldLine.match(/^[-•]\s/)) {
+        return `<div class="md-bullet"><span class="md-dot"></span><span>${boldLine.replace(/^[-•]\s+/, '')}</span></div>`;
+      }
+      return boldLine;
+    })
+    .join('<br/>');
 }
-
 import { useState, useRef, useEffect } from "react";
 import styles from "./page.module.css";
 
