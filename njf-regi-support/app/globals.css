@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --njf-navy: #0a1628;
+  --njf-blue: #1a3a6b;
+  --njf-accent: #2563eb;
+  --njf-accent-light: #3b82f6;
+  --njf-surface: #f8fafc;
+  --njf-surface-2: #f1f5f9;
+  --njf-border: #e2e8f0;
+  --njf-text: #0f172a;
+  --njf-text-muted: #64748b;
+  --njf-white: #ffffff;
+  --njf-green: #059669;
+  --njf-orange: #ea580c;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: 'Noto Sans JP', 'Inter', sans-serif;
+  background: var(--njf-navy);
+  color: var(--njf-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+#__next { height: 100%; }
