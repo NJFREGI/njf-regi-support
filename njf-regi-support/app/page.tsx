@@ -4,20 +4,19 @@ function renderMarkdown(text: string): string {
   return text
     .split('\n')
     .map(line => {
-      const stepMatch = line.match(/^(\d+)\.\s+\*\*(.+?)\*\*:?\s*(.*)$/);
+      // 数字步骤：1. **标题** 或 1. 标题（统一处理，标题内的**也去掉）
+      const stepMatch = line.match(/^(\d+)\.\s+(.+)$/);
       if (stepMatch) {
-        const desc = stepMatch[3] ? `<span class="md-step-text">${stepMatch[3]}</span>` : '';
-        return `<div class="md-step"><span class="md-step-num">${stepMatch[1]}</span><span class="md-step-title">${stepMatch[2]}</span>${desc}</div>`;
+        const title = stepMatch[2].replace(/\*\*(.+?)\*\*/g, '$1').replace(/:$/, '');
+        return `<div class="md-step"><span class="md-step-num">${stepMatch[1]}</span><span class="md-step-title">${title}</span></div>`;
       }
-      const plainStep = line.match(/^(\d+)\.\s+(.+)$/);
-      if (plainStep) {
-        return `<div class="md-step"><span class="md-step-num">${plainStep[1]}</span><span class="md-step-text">${plainStep[2]}</span></div>`;
+      // 列表项
+      if (line.match(/^[-•]\s/)) {
+        const content = line.replace(/^[-•]\s+/, '').replace(/\*\*(.+?)\*\*/g, '<span class="md-bold">$1</span>');
+        return `<div class="md-bullet"><span class="md-dot"></span><span>${content}</span></div>`;
       }
-      let boldLine = line.replace(/\*\*(.+?)\*\*/g, '<span class="md-bold">$1</span>');
-      if (boldLine.match(/^[-•]\s/)) {
-        return `<div class="md-bullet"><span class="md-dot"></span><span>${boldLine.replace(/^[-•]\s+/, '')}</span></div>`;
-      }
-      return boldLine;
+      // 普通行里的粗体
+      return line.replace(/\*\*(.+?)\*\*/g, '<span class="md-bold">$1</span>');
     })
     .join('<br/>');
 }
