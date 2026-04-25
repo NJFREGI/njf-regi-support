@@ -1,5 +1,14 @@
 "use client";
 
+function renderMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="md-bold">$1</strong>')
+    .replace(/^(\d+)\. (.+)$/gm, '<div class="md-step"><span class="md-step-num">$1</span><span class="md-step-text">$2</span></div>')
+    .replace(/^[-•] (.+)$/gm, '<div class="md-bullet"><span class="md-dot"></span><span>$1</span></div>')
+    .replace(/\n{2,}/g, '<br/>')
+    .replace(/\n/g, '<br/>');
+}
+
 import { useState, useRef, useEffect } from "react";
 import styles from "./page.module.css";
 
@@ -217,7 +226,7 @@ export default function Home() {
               {msg.role === "assistant" && <div className={styles.avatar}><span>AI</span></div>}
               <div className={styles.messageBubbleWrap}>
                 <div className={`${styles.bubble} ${msg.role === "user" ? styles.userBubble : styles.assistantBubble}`}>
-                  <p className={styles.bubbleText}>{msg.content}</p>
+                  <div className={styles.bubbleText} dangerouslySetInnerHTML={{ __html: msg.role === "assistant" ? renderMarkdown(msg.content) : msg.content.replace(/\n/g, "<br/>") }} />
                   {msg.couldNotAnswer && msg.role === "assistant" && (
                     <div className={styles.contactCard}>
                       <p className={styles.contactCardTitle}>{t.contactCardTitle}</p>
