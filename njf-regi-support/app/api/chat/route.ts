@@ -1,43 +1,62 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Redis } from "@upstash/redis";
 
+const redis = Redis.fromEnv();
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || "";
 
-const MANUAL_CONTENT = `
-【麻辣烫称重与结账流程】
-标准流程：选商品 → 选辣度 → 计量 → 输入重量 → 选择堂食/外带 → 会计 → 选择支付方式 → 输入实收金额 → 确认 → 打印
-重要提示：称重前一定要先去皮。
+const FALLBACK_CONTENT = `
+【麻辣湯の計量・会計フロー / 麻辣烫称重结账流程】
+手順1/步骤1：風袋引き後、前払モードで麻辣湯/100gを選択 / 去皮后进入前払モード选择商品
+手順2/步骤2：辛さ選択後「計量」クリック / 选辣度后点击"计量"
+手順3/步骤3：重量入力→「確定」/ 输入重量→"确定"
+手順4/步骤4：注文確認→「会計」/ 确认订单→"会計"
+手順5/步骤5：支払方法選択→受取金額入力 / 选支付方式→输入金额
+手順6/步骤6：お釣り確認→「確定」/ 确认找零→"确定"
+手順7/步骤7：レシート/領収書印刷 / 打印小票或领收书
 
-步骤1：先去皮，进入前払モード，选择麻辣湯/100g等称重商品
-步骤2：选择辣度（不辣、少辣、辣、激辣），点击"计量"
-步骤3：输入实际克数，点击"确定"
-步骤4：核对订单，点击"会計"
-步骤5：选择支付方式，输入实收金额
-步骤6：确认找零，点击"确定"
-步骤7：打印小票或领收书
+【精算フロー / 交班流程】
+手順1/步骤1：「精算」クリック / 点击"精算"
+手順2/步骤2：集計データ確認 / 核对汇总数据
+手順3/步骤3：現金確認→紙幣枚数入力 / 现金确认→输入张数
+手順4/步骤4：「精算」クリック完了 / 点击"精算"完成
+手順5/步骤5：準備金確認後シャットダウン可 / 出现准备金确认后可关机
 
-【交班流程】
-步骤1：点击"精算"进入交班页面
-步骤2：核对当班汇总数据
-步骤3：点击"现金確認"，输入各面额张数
-步骤4：点击"精算"完成交班
-步骤5：出现"準備金確認"后可直接关机
-
-【补打与反结账流程】
-补打：注文履歴 → 前払注文履歴 → 找订单 → 打印结账单/领收书
-反结账：注文履歴 → 前払注文履歴 → 找订单 → 编辑 → 确认退款 → 退菜/整单取消
+【返会計・再印刷 / 反结账补打】
+再印刷/补打：注文履歴→前払注文履歴→注文選択→印刷
+返会計/反结账：注文履歴→前払注文履歴→編集→返金確認→取消
 `;
 
 const FORMAT_RULE = `
-Format rules (MUST follow strictly):
+Format rules:
 - Number each step: 1. 2. 3.
-- Step title MUST be SHORT (max 8 characters). Put details on the next line as bullet points.
-- Format:
-  1. 简短标题
-     - 详细说明不超过20字
-  2. 简短标题
-     - 详细说明
-- Never put long sentences as step titles
-- Use - for bullet points under each step`;
+- Step title max 8 characters, short and clear
+- Put details as bullet points on next line
+- Example:
+  1. 短い題名
+     - 詳細説明
+- Never put long text as step title`;
+
+async function getManualContent(lang: string): Promise<string> {
+  try {
+    const bothFiles = await redis.get<string[]>("manual:files:both") || [];
+    const langFiles = await redis.get<string[]>(`manual:files:${lang}`) || [];
+    const allFiles = [...bothFiles, ...langFiles];
+
+    if (allFiles.length === 0) return FALLBACK_CONTENT;
+
+    const contents: string[] = [];
+    for (const filename of allFiles) {
+      const bothContent = await redis.get<string>(`manual:both:${filename}`);
+      const langContent = await redis.get<string>(`manual:${lang}:${filename}`);
+      if (bothContent) contents.push(bothContent);
+      if (langContent) contents.push(langContent);
+    }
+
+    return contents.length > 0 ? contents.join("\n\n") : FALLBACK_CONTENT;
+  } catch {
+    return FALLBACK_CONTENT;
+  }
+}
 
 export async function POST(req: NextRequest) {
   let lang = "ja";
@@ -50,9 +69,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid messages" }, { status: 400 });
     }
 
+    const manualContent = await getManualContent(lang);
+
     const systemPrompt = lang === "zh"
-      ? `你是NJF REGI收银系统的AI客服。必须只用简体中文回答，禁止日语。参考以下手册内容：\n${MANUAL_CONTENT}\n${FORMAT_RULE}`
-      : `あなたはNJF REGIシステムのAIサポートです。必ず日本語のみで回答してください。英語・中国語禁止。以下のマニュアルを参照してください：\n${MANUAL_CONTENT}\n${FORMAT_RULE}`;
+      ? `你是NJF REGI收银系统的AI客服。必须只用简体中文回答，禁止日语。参考以下手册内容：\n${manualContent}\n${FORMAT_RULE}`
+      : `あなたはNJF REGIシステムのAIサポートです。必ず日本語のみで回答してください。英語・中国語禁止。以下のマニュアルを参照してください：\n${manualContent}\n${FORMAT_RULE}`;
 
     const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
@@ -81,7 +102,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ answer: outputText, couldNotAnswer: false });
   } catch (error) {
-    console.error("DeepSeek API error:", error);
+    console.error("API error:", error);
     return NextResponse.json(
       { error: lang === "zh" ? "AI服务连接失败，请稍后重试。" : "AIサービスに接続できませんでした。", couldNotAnswer: true },
       { status: 500 }
